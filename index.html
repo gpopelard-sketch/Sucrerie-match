@@ -1,1 +1,2198 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sucrerie Match</title>
+<style>
+  :root{
+    --bg-top:#3b1e5e;
+    --bg-bottom:#7b2f8f;
+    --panel:#2a1245cc;
+    --gold:#ffd166;
+    --pink:#ff6b9d;
+    --white:#fdf7ff;
+    --text-dim:#c9b8e0;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow-x:hidden;
+    overflow-y:auto;
+    user-select:none;
+  }
+  body{
+    background:
+      radial-gradient(circle at 15% 12%, #ff8ec766 0%, transparent 42%),
+      radial-gradient(circle at 85% 22%, #7be0ff55 0%, transparent 45%),
+      radial-gradient(circle at 25% 88%, #ffd06655 0%, transparent 48%),
+      radial-gradient(circle at 78% 82%, #b96bff55 0%, transparent 45%),
+      linear-gradient(170deg, #4b2170 0%, #6b2a86 45%, #8a2f7a 78%, #5a1f66 100%);
+  }
+  /* Rayures douces facon papier de bonbon */
+  body::before{
+    content:'';
+    position:fixed; inset:-20%;
+    background:repeating-linear-gradient(
+      115deg,
+      #ffffff0a 0px, #ffffff0a 26px,
+      transparent 26px, transparent 66px
+    );
+    pointer-events:none;
+    z-index:0;
+  }
+  /* Bulles sucrees qui flottent doucement */
+  body::after{
+    content:'';
+    position:fixed; inset:0;
+    background:
+      radial-gradient(circle 7px at 12% 20%, #ffffff30, transparent),
+      radial-gradient(circle 11px at 82% 30%, #ffd9ee2e, transparent),
+      radial-gradient(circle 6px at 68% 12%, #ffffff26, transparent),
+      radial-gradient(circle 14px at 22% 66%, #d7f3ff22, transparent),
+      radial-gradient(circle 8px at 90% 70%, #ffffff26, transparent),
+      radial-gradient(circle 10px at 45% 88%, #ffe9b52a, transparent),
+      radial-gradient(circle 5px at 55% 45%, #ffffff2b, transparent);
+    animation:floaty 14s ease-in-out infinite alternate;
+    pointer-events:none;
+    z-index:0;
+  }
+  @keyframes floaty{
+    from{ transform:translateY(0) }
+    to{ transform:translateY(-22px) }
+  }
+  @media (prefers-reduced-motion: reduce){
+    body::after{ animation:none; }
+  }
+  .screen{
+    position:fixed; inset:0;
+    display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    z-index:2; text-align:center; padding:20px;
+  }
+  .screen.active{ display:flex; }
 
+  #splashScreen{ gap:10px; }
+  #splashLogo{
+    font-size:64px;
+    animation:splashZoom .7s cubic-bezier(.34,1.56,.64,1);
+  }
+  #splashTitle{
+    font-family:Georgia, 'Times New Roman', serif;
+    font-weight:900; font-style:italic;
+    color:var(--gold);
+    font-size:clamp(24px,8vw,36px);
+    text-shadow:0 2px 0 #7a3d00, 0 4px 10px rgba(0,0,0,.4);
+    animation:splashFadeUp .6s ease .15s both;
+  }
+  #splashCandies{
+    display:flex; gap:14px; font-size:26px;
+    animation:splashFadeUp .6s ease .35s both;
+  }
+  #splashCandies span{
+    display:inline-block;
+    animation:splashBounce 1s ease-in-out infinite;
+  }
+  #splashCandies span:nth-child(2){ animation-delay:.1s; }
+  #splashCandies span:nth-child(3){ animation-delay:.2s; }
+  #splashCandies span:nth-child(4){ animation-delay:.3s; }
+  #splashCandies span:nth-child(5){ animation-delay:.4s; }
+  @keyframes splashZoom{
+    0%{ transform:scale(0) rotate(-30deg); opacity:0; }
+    100%{ transform:scale(1) rotate(0deg); opacity:1; }
+  }
+  @keyframes splashFadeUp{
+    0%{ transform:translateY(14px); opacity:0; }
+    100%{ transform:translateY(0); opacity:1; }
+  }
+  @keyframes splashBounce{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-10px); }
+  }
+
+  .homeTitle{
+    font-family:Georgia, 'Times New Roman', serif;
+    font-weight:900; font-style:italic;
+    color:var(--gold);
+    font-size:clamp(26px,8vw,38px);
+    margin:6px 0 0 0;
+    text-shadow:0 2px 0 #7a3d00, 0 4px 10px rgba(0,0,0,.4);
+  }
+  #homeCoinBadge{
+    position:absolute; top:16px; right:16px;
+    background:var(--panel); border:1px solid #ffd16644;
+    border-radius:12px; padding:8px 12px; color:var(--gold);
+    font-weight:700; font-size:13px;
+  }
+  #homeMenu{
+    display:flex; flex-direction:column; gap:12px;
+    margin-top:28px; width:min(80vw, 280px);
+  }
+  .menuBtn{
+    background:var(--panel); border:1px solid #ffffff22;
+    color:var(--white); border-radius:14px;
+    padding:14px 18px; font-size:15px; font-weight:700;
+    cursor:pointer;
+  }
+  .menuBtn.primary{
+    background:linear-gradient(180deg, var(--pink), #c93b6e);
+    box-shadow:0 3px 0 #8f2650; border:none;
+  }
+  .menuBtn.primary:active{ transform:translateY(2px); box-shadow:0 1px 0 #8f2650; }
+  #resumeHint{ color:var(--text-dim); font-size:12px; margin-top:-4px; }
+  .menuBtn.danger{
+    background:linear-gradient(180deg, #ff6b6b, #a52424);
+    border:none; box-shadow:0 3px 0 #6e1414;
+  }
+
+  .menuCard{
+    background:var(--panel); border:1px solid #ffffff33;
+    border-radius:18px; padding:26px 24px; text-align:center;
+    max-width:320px; width:88vw;
+  }
+  .menuCard h2{ color:var(--gold); margin:0 0 14px 0; }
+  .profileRow{
+    display:flex; justify-content:space-between; align-items:center;
+    background:#ffffff0a; border-radius:10px;
+    padding:10px 14px; margin-bottom:10px;
+    color:var(--text-dim); font-size:13px;
+  }
+  .profileRow strong{ color:var(--white); }
+  .nameLabel{
+    display:block; text-align:left; color:var(--text-dim);
+    font-size:11px; text-transform:uppercase; letter-spacing:1px;
+    margin-bottom:6px;
+  }
+  #playerNameInput{
+    width:100%; box-sizing:border-box;
+    background:#ffffff0a; border:1px solid #ffffff33;
+    border-radius:10px; padding:10px 12px;
+    color:var(--white); font-size:14px;
+    margin-bottom:14px;
+  }
+  #playerNameInput::placeholder{ color:var(--text-dim); }
+  .settingsHint{ color:var(--text-dim); font-size:12px; margin-bottom:16px; }
+  .premiumHint{ margin-top:-6px; color:#8fe0ac; }
+  .settingsDivider{
+    height:1px; background:#ffffff22;
+    margin:16px 0;
+  }
+  .menuCard .menuBtn{ width:100%; margin-bottom:10px; }
+
+  #app{
+    display:none; flex-direction:column; align-items:center;
+    min-height:100%; padding:14px 10px 24px; gap:8px;
+    position:relative; z-index:1;
+    overflow-y:auto;
+  }
+  #app.active{ display:flex; }
+  h1{
+    font-family:Georgia, 'Times New Roman', serif;
+    font-weight:900; font-style:italic;
+    color:var(--gold);
+    margin:2px 0 0 0;
+    font-size:clamp(22px,7vw,32px);
+    letter-spacing:1px;
+    text-shadow:0 2px 0 #7a3d00, 0 4px 10px rgba(0,0,0,.4);
+  }
+  .subtitle{
+    color:var(--text-dim);
+    font-size:12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-top:-8px;
+  }
+  #hud{
+    display:flex; justify-content:space-between; align-items:center;
+    width:100%; max-width:420px;
+    background:var(--panel);
+    border-radius:16px;
+    padding:10px 16px;
+    border:1px solid #ffffff22;
+  }
+  .hud-item{ text-align:center; }
+  .hud-label{ font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+  .hud-value{ font-size:17px; color:var(--white); font-weight:700; }
+  #goalWrap{ width:100%; max-width:420px; }
+  #goalBar{
+    height:8px; border-radius:6px; background:#ffffff1a; overflow:hidden;
+    border:1px solid #ffffff22;
+  }
+  #goalFill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--pink), var(--gold));
+    transition:width .35s ease;
+  }
+  #goalText{ font-size:11px; color:var(--text-dim); margin-top:4px; text-align:center; }
+  #comboText{
+    font-size:14px; color:var(--gold); height:22px; font-weight:700; letter-spacing:1px;
+    white-space:nowrap; overflow:visible; position:relative; z-index:20;
+  }
+  #comboText.bonus{
+    font-size:clamp(13px, 4.2vw, 16px);
+    animation:comboPop .4s ease;
+  }
+  @keyframes comboPop{
+    0%{ transform:scale(.6); opacity:0; }
+    55%{ transform:scale(1.2); opacity:1; }
+    100%{ transform:scale(1); opacity:1; }
+  }
+
+  #board{
+    display:grid;
+    grid-template-columns:repeat(8, 1fr);
+    grid-template-rows:repeat(8, 1fr);
+    gap:4px;
+    width:min(92vw, 420px);
+    aspect-ratio:1/1;
+    background:#2a124599;
+    backdrop-filter:blur(8px);
+    border-radius:20px;
+    padding:6px;
+    border:1px solid #ffffff2e;
+    box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 #ffffff22;
+    position:relative;
+    touch-action:none;
+  }
+  .cell{
+    display:flex; align-items:center; justify-content:center;
+    border-radius:10px;
+    background:#ffffff08;
+    position:relative;
+    cursor:pointer;
+  }
+  .candy{
+    width:100%; height:100%;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    opacity:1;
+  }
+  .candy.pop{ animation:popBurst .3s ease-out forwards; }
+  @keyframes popBurst{
+    0%{ transform:scale(1); opacity:1; filter:brightness(1); }
+    35%{ transform:scale(1.45); opacity:1; filter:brightness(1.9); }
+    100%{ transform:scale(0); opacity:0; filter:brightness(1); }
+  }
+  .candy-icon{
+    font-size:clamp(22px, 7.2vw, 32px);
+    pointer-events:none;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));
+    transition:transform .15s ease;
+    position:relative;
+    z-index:2;
+  }
+  .special-bg{
+    position:absolute;
+    inset:8%;
+    border-radius:50%;
+    z-index:1;
+  }
+  .special-bg.h{
+    background:
+      repeating-linear-gradient(100deg, rgba(255,255,255,.65) 0 4px, transparent 4px 10px),
+      radial-gradient(circle at 35% 30%, #fff0c2, #ffb92d);
+    box-shadow:0 0 12px #ffb92dbb, inset 0 2px 4px rgba(255,255,255,.6), inset 0 -3px 5px rgba(0,0,0,.25);
+  }
+  .special-bg.v{
+    background:
+      repeating-linear-gradient(10deg, rgba(255,255,255,.65) 0 4px, transparent 4px 10px),
+      radial-gradient(circle at 35% 30%, #cdeeff, #3d9eff);
+    box-shadow:0 0 12px #3d9effbb, inset 0 2px 4px rgba(255,255,255,.6), inset 0 -3px 5px rgba(0,0,0,.25);
+  }
+  .special-bg.bomb{
+    background:conic-gradient(from 0deg, #ff6b9d, #ffd166, #7be0ff, #b96bff, #ff6b9d);
+    box-shadow:0 0 14px #ffffffbb;
+    animation:spinBomb 3.2s linear infinite;
+  }
+  @keyframes spinBomb{ to{ transform:rotate(360deg); } }
+
+  .candy.special{ transform:scale(1.16); z-index:2; }
+
+  .comet{
+    position:absolute;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:radial-gradient(circle, #ffffff, #ffe9a6 45%, transparent 75%);
+    box-shadow:0 0 10px 3px #ffe9a6cc, 0 0 22px 8px #ffb92d55;
+    z-index:6;
+    pointer-events:none;
+    transform:translate(-50%,-50%);
+    opacity:1;
+  }
+  .comet.col{
+    background:radial-gradient(circle, #ffffff, #cdeeff 45%, transparent 75%);
+    box-shadow:0 0 10px 3px #cdeeffcc, 0 0 22px 8px #3d9eff55;
+  }
+
+  .beam{
+    position:absolute;
+    z-index:5;
+    pointer-events:none;
+    opacity:0;
+    background:linear-gradient(90deg, transparent, #fff9 15%, #ffe9a6 50%, #fff9 85%, transparent);
+    animation:beamFlash 480ms ease-out forwards;
+  }
+  .beam.vertical{ background:linear-gradient(0deg, transparent, #fff9 15%, #cdeeff 50%, #fff9 85%, transparent); }
+  @keyframes beamFlash{
+    0%{ opacity:0; }
+    18%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .shockwave{
+    position:absolute;
+    border-radius:50%;
+    border:3px solid #ffffff;
+    background:radial-gradient(circle, #ffffff66, transparent 70%);
+    z-index:5;
+    pointer-events:none;
+    animation:shockExpand 550ms ease-out forwards;
+  }
+  @keyframes shockExpand{
+    0%{ transform:translate(-50%,-50%) scale(0.2); opacity:.95; }
+    100%{ transform:translate(-50%,-50%) scale(3.4); opacity:0; }
+  }
+  .candy.selected .candy-icon{ transform:scale(1.2); filter:drop-shadow(0 0 6px var(--gold)); }
+  .candy-badge{
+    position:absolute;
+    bottom:1px; right:1px;
+    font-size:10px;
+    line-height:1;
+    background:#000000a0;
+    color:#ffe98f;
+    border-radius:5px;
+    padding:2px 3px;
+    pointer-events:none;
+    z-index:3;
+  }
+
+  .candy.swap-hint{ animation:shake .3s ease; }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    25%{ transform:translateX(-4px); }
+    75%{ transform:translateX(4px); }
+  }
+
+  #footer{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;
+  }
+  button{
+    background:linear-gradient(180deg, var(--pink), #c93b6e);
+    color:white; border:none; border-radius:12px;
+    padding:10px 16px; font-size:13px; font-weight:700;
+    cursor:pointer;
+    box-shadow:0 3px 0 #8f2650;
+  }
+  button:active{ transform:translateY(2px); box-shadow:0 1px 0 #8f2650; }
+
+  #adOverlay{
+    position:fixed; inset:0; background:#000000d8;
+    display:none; align-items:center; justify-content:center;
+    z-index:15;
+  }
+  #adOverlay.show{ display:flex; }
+  #adCard{
+    background:var(--panel); border:1px solid #ffffff33;
+    border-radius:18px; padding:30px 26px; text-align:center;
+    max-width:280px;
+  }
+  #adLabel{ color:var(--text-dim); font-size:12px; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px; }
+  #adCountdown{
+    font-size:44px; font-weight:900; color:var(--gold);
+    text-shadow:0 0 14px #ffd16688; margin-bottom:10px;
+  }
+  #adSubtext{ color:var(--text-dim); font-size:12px; margin-bottom:18px; }
+  #adContinueBtn{
+    background:linear-gradient(180deg, var(--pink), #c93b6e);
+    color:white; border:none; border-radius:12px;
+    padding:10px 20px; font-size:14px; font-weight:700;
+    cursor:pointer; box-shadow:0 3px 0 #8f2650;
+  }
+  #adContinueBtn:disabled{ opacity:.4; cursor:default; }
+
+  #purchaseOverlay{
+    position:fixed; inset:0; background:#000000d8;
+    display:none; align-items:center; justify-content:center;
+    z-index:16;
+  }
+  #purchaseOverlay.show{ display:flex; }
+  #purchaseCard{
+    background:var(--panel); border:1px solid #ffffff33;
+    border-radius:18px; padding:30px 26px; text-align:center;
+    max-width:280px;
+  }
+  #purchaseLabel{ color:var(--text-dim); font-size:12px; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px; }
+  #purchaseSubtext{ color:var(--text-dim); font-size:12px; margin-bottom:18px; }
+  #purchaseAmount{
+    font-size:36px; font-weight:900; color:var(--gold);
+    text-shadow:0 0 14px #ffd16688; margin-bottom:10px;
+  }
+  #purchaseConfirmBtn{
+    background:linear-gradient(180deg, #56d68a, #1e8f52);
+    color:white; border:none; border-radius:12px;
+    padding:10px 20px; font-size:14px; font-weight:700;
+    cursor:pointer; box-shadow:0 2px 0 #145c35;
+    display:block; width:100%; margin-bottom:8px;
+  }
+  #purchaseCancelBtn{
+    background:transparent; border:1px solid #ffffff33;
+    color:var(--text-dim); border-radius:12px;
+    padding:9px 20px; font-size:13px; font-weight:700;
+    cursor:pointer; display:block; width:100%;
+  }
+
+  #overlay{
+    position:fixed; inset:0; background:#00000090;
+    display:none; align-items:center; justify-content:center;
+    z-index:10;
+    overflow:hidden;
+  }
+  #overlay.show{ display:flex; }
+  #overlayCard{
+    background:var(--panel); border:1px solid #ffffff33;
+    border-radius:18px; padding:26px 30px; text-align:center;
+    max-width:280px;
+    position:relative; z-index:2;
+  }
+  #overlayCard h2{ color:var(--gold); margin:0 0 6px 0; }
+  #overlayCard p{ color:var(--text-dim); margin:0 0 16px 0; font-size:14px; }
+
+  #coinBadge{
+    background:var(--panel); border:1px solid #ffd16644;
+    border-radius:12px; padding:9px 14px; color:var(--gold);
+    font-weight:700; font-size:14px;
+  }
+
+  #shopOverlay{
+    position:fixed; inset:0; background:#00000090;
+    display:none; align-items:center; justify-content:center;
+    z-index:11;
+  }
+  #shopOverlay.show{ display:flex; }
+  #shopCard{
+    background:var(--panel); border:1px solid #ffffff33;
+    border-radius:18px; padding:22px 20px; text-align:center;
+    max-width:320px; width:88vw;
+  }
+  #shopCard h2{ color:var(--gold); margin:0 0 4px 0; }
+  .shopCoins{ color:var(--text-dim); font-size:13px; margin:0 0 14px 0; }
+  .shopItem{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#ffffff0a; border-radius:12px; padding:8px 10px;
+    margin-bottom:8px; text-align:left; gap:10px;
+  }
+  .shopItemInfo{ display:flex; align-items:center; gap:10px; }
+  .shopItemIcon{ font-size:22px; width:30px; text-align:center; }
+  .shopItemName{ color:var(--white); font-size:13px; font-weight:700; }
+  .shopItemDesc{ color:var(--text-dim); font-size:11px; }
+  .buyBtn{
+    background:linear-gradient(180deg, var(--gold), #b98600);
+    color:#3b1e00; border:none; border-radius:10px;
+    padding:8px 10px; font-size:12px; font-weight:700;
+    cursor:pointer; box-shadow:0 2px 0 #7a5900;
+    white-space:nowrap;
+  }
+  .buyBtn:active{ transform:translateY(1px); box-shadow:0 1px 0 #7a5900; }
+  .buyBtn.disabled{ opacity:.45; }
+  .adRewardBtn{
+    background:linear-gradient(180deg, #56d68a, #1e8f52);
+    box-shadow:0 2px 0 #145c35;
+  }
+  #shopCloseBtn{
+    margin-top:6px;
+    background:linear-gradient(180deg, var(--pink), #c93b6e);
+    color:white; border:none; border-radius:12px;
+    padding:10px 16px; font-size:13px; font-weight:700;
+    cursor:pointer; box-shadow:0 3px 0 #8f2650;
+  }
+  #starsRow{
+    display:flex; justify-content:center; gap:10px;
+    margin:6px 0 14px 0;
+  }
+  .starIcon{
+    font-size:34px;
+    color:#ffffff26;
+    transform:scale(0);
+    animation:starPop .45s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .starIcon.won{
+    color:var(--gold);
+    text-shadow:0 0 14px #ffd166cc;
+  }
+  .starIcon:nth-child(1){ animation-delay:.05s; }
+  .starIcon:nth-child(2){ animation-delay:.22s; }
+  .starIcon:nth-child(3){ animation-delay:.39s; }
+  @keyframes starPop{
+    0%{ transform:scale(0) rotate(-25deg); }
+    70%{ transform:scale(1.25) rotate(8deg); }
+    100%{ transform:scale(1) rotate(0deg); }
+  }
+  .confetti{
+    position:absolute; top:-10px;
+    width:8px; height:14px;
+    opacity:.9;
+    z-index:1;
+    animation:confettiFall linear forwards;
+  }
+  @keyframes confettiFall{
+    to{ transform:translateY(115vh) rotate(540deg); opacity:.3; }
+  }
+</style>
+</head>
+<body>
+
+<div id="splashScreen" class="screen active">
+  <div id="splashLogo">🍬</div>
+  <h1 id="splashTitle">Sucrerie Match</h1>
+  <div id="splashCandies">
+    <span>🐻</span><span>🍓</span><span>🍩</span><span>🐊</span><span>🍭</span>
+  </div>
+</div>
+
+<div id="homeScreen" class="screen">
+  <div id="homeCoinBadge">🪙 <span id="homeCoinVal">0</span></div>
+  <h1 class="homeTitle">Sucrerie Match</h1>
+  <div class="subtitle">Aligne 3 bonbons ou plus</div>
+  <div id="homeMenu">
+    <button class="menuBtn primary" id="playBtn">▶️ Jouer</button>
+    <div id="resumeHint"></div>
+    <button class="menuBtn" id="profileBtn">👤 Profil</button>
+    <button class="menuBtn" id="settingsBtn">⚙️ Paramètres</button>
+  </div>
+</div>
+
+<div id="profileScreen" class="screen">
+  <div class="menuCard">
+    <h2>Profil</h2>
+    <label class="nameLabel" for="playerNameInput">Ton prénom ou pseudo</label>
+    <input id="playerNameInput" type="text" maxlength="16" placeholder="Ex : Geoffrey" />
+    <div class="profileRow">
+      <span>Meilleur niveau atteint</span>
+      <strong id="profileBestLevel">1</strong>
+    </div>
+    <div class="profileRow">
+      <span>Pièces</span>
+      <strong>🪙 <span id="profileCoins">0</span></strong>
+    </div>
+    <button class="menuBtn" id="profileBackBtn">Retour</button>
+  </div>
+</div>
+
+<div id="settingsScreen" class="screen">
+  <div class="menuCard">
+    <h2>Paramètres</h2>
+
+    <div class="profileRow" id="premiumStatusRow" style="display:none">
+      <span>Version</span>
+      <strong>🌟 Premium (sans pub)</strong>
+    </div>
+    <button class="menuBtn primary" id="premiumBtn">🌟 Version sans pub — 1€</button>
+    <p class="settingsHint premiumHint">+500 🪙 offertes, ta progression actuelle est conservée.</p>
+
+    <div class="settingsDivider"></div>
+
+    <button class="menuBtn" id="soundSettingsBtn">🔊 Sons : Activés</button>
+
+    <div class="settingsDivider"></div>
+
+    <p class="settingsHint">Ça efface ta progression (pièces et meilleur niveau) et recommence à zéro.</p>
+    <button class="menuBtn danger" id="resetProgressBtn">Réinitialiser la progression</button>
+    <button class="menuBtn" id="settingsBackBtn">Retour</button>
+  </div>
+</div>
+
+<div id="app">
+  <h1>Sucrerie Match</h1>
+  <div class="subtitle">Aligne 3 bonbons ou plus</div>
+
+
+  <div id="hud">
+    <div class="hud-item">
+      <div class="hud-label">Score</div>
+      <div class="hud-value" id="scoreVal">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Coups</div>
+      <div class="hud-value" id="movesVal">20</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Temps</div>
+      <div class="hud-value" id="timeVal">1:30</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Niveau</div>
+      <div class="hud-value" id="levelVal">1</div>
+    </div>
+  </div>
+
+  <div id="goalWrap">
+    <div id="goalBar"><div id="goalFill"></div></div>
+    <div id="goalText">Objectif : 0 / 300</div>
+  </div>
+  <div id="comboText"></div>
+
+  <div id="board"></div>
+
+  <div id="footer">
+    <button id="restartBtn">Recommencer</button>
+    <button id="shopBtn">🛒 Boutique</button>
+    <button id="menuBackBtn">🏠 Menu</button>
+    <button id="soundToggleBtn">🔊</button>
+    <div id="coinBadge">🪙 <span id="coinVal">0</span></div>
+  </div>
+</div>
+
+<div id="shopOverlay">
+  <div id="shopCard">
+    <h2>Boutique</h2>
+    <p class="shopCoins">🪙 <span id="shopCoinVal">0</span> pièces</p>
+    <div class="shopItem" data-item="time">
+      <div class="shopItemInfo">
+        <div class="shopItemIcon">⏱️</div>
+        <div>
+          <div class="shopItemName">+15 secondes</div>
+          <div class="shopItemDesc">Ajoutées tout de suite au chrono</div>
+        </div>
+      </div>
+      <button class="buyBtn" data-item="time">30 🪙</button>
+    </div>
+    <div class="shopItem" data-item="moves">
+      <div class="shopItemInfo">
+        <div class="shopItemIcon">🔄</div>
+        <div>
+          <div class="shopItemName">+3 coups</div>
+          <div class="shopItemDesc">Ajoutés tout de suite</div>
+        </div>
+      </div>
+      <button class="buyBtn" data-item="moves">40 🪙</button>
+    </div>
+    <div class="shopItem" data-item="stripe">
+      <div class="shopItemInfo">
+        <div class="shopItemIcon">🍓↔</div>
+        <div>
+          <div class="shopItemName">Bonbon rayé</div>
+          <div class="shopItemDesc">Placé aussitôt sur la grille</div>
+        </div>
+      </div>
+      <button class="buyBtn" data-item="stripe">60 🪙</button>
+    </div>
+    <div class="shopItem" data-item="bomb">
+      <div class="shopItemInfo">
+        <div class="shopItemIcon">🌈</div>
+        <div>
+          <div class="shopItemName">Bonbon arc-en-ciel</div>
+          <div class="shopItemDesc">Placé aussitôt sur la grille</div>
+        </div>
+      </div>
+      <button class="buyBtn" data-item="bomb">120 🪙</button>
+    </div>
+    <div class="shopItem" data-item="ad">
+      <div class="shopItemInfo">
+        <div class="shopItemIcon">🎥</div>
+        <div>
+          <div class="shopItemName">Regarder une vidéo</div>
+          <div class="shopItemDesc">Gratuit, gagne des pièces</div>
+        </div>
+      </div>
+      <button class="buyBtn adRewardBtn" id="watchAdBtn">+50 🪙</button>
+    </div>
+    <button id="shopCloseBtn">Fermer</button>
+  </div>
+</div>
+
+<div id="purchaseOverlay">
+  <div id="purchaseCard">
+    <div id="purchaseLabel">💳 Paiement (simulation)</div>
+    <div id="purchaseAmount">1,00 €</div>
+    <p id="purchaseSubtext">Ta progression (niveau, pièces) est conservée. +500 🪙 offertes à l'achat !</p>
+    <button id="purchaseConfirmBtn">Confirmer l'achat (simulation)</button>
+    <button id="purchaseCancelBtn">Annuler</button>
+  </div>
+</div>
+
+<div id="adOverlay">
+  <div id="adCard">
+    <div id="adLabel">📺 Publicité (simulation)</div>
+    <div id="adCountdown">5</div>
+    <p id="adSubtext">Dans le vrai jeu, une vraie vidéo AdMob s'affichera ici.</p>
+    <button id="adContinueBtn" disabled>Continuer</button>
+  </div>
+</div>
+
+<div id="overlay">
+  <div id="overlayCard">
+    <h2 id="overlayTitle">Bravo !</h2>
+    <div id="starsRow"></div>
+    <p id="overlayText">Tu as atteint l'objectif.</p>
+    <button id="overlayBtn">Continuer</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SIZE = 8;
+  const TYPES = [
+    { icon:'🐻' },
+    { icon:'🐊' },
+    { icon:'🍓' },
+    { icon:'🍩' },
+    { icon:'🐛' },
+    { icon:'🍭' },
+    { icon:'🍇' },
+    { icon:'🐝' },
+    { icon:'🍒' }
+  ];
+  const BASE_COLORS = 6;
+  const SWIPE_THRESHOLD = 20;
+
+  // Nombre de couleurs actives selon le niveau : +1 bonbon different tous les 20 paliers,
+  // dans la limite des types disponibles.
+  function colorCountForLevel(lvl){
+    return Math.min(TYPES.length, BASE_COLORS + Math.floor((lvl-1)/20));
+  }
+
+  let grid = [];
+  let selected = null;
+  let score = 0;
+  let moves = 20;
+  let startMoves = 20;
+  let level = 1;
+  let goal = 300;
+  let busy = false;
+  let timeLeft = 90;
+  let timerInterval = null;
+  let failCount = 0;
+
+  const boardEl = document.getElementById('board');
+  const scoreEl = document.getElementById('scoreVal');
+  const movesEl = document.getElementById('movesVal');
+  const timeEl = document.getElementById('timeVal');
+  const levelEl = document.getElementById('levelVal');
+  const goalFillEl = document.getElementById('goalFill');
+  const goalTextEl = document.getElementById('goalText');
+  const comboTextEl = document.getElementById('comboText');
+  const overlayEl = document.getElementById('overlay');
+  const overlayTitleEl = document.getElementById('overlayTitle');
+  const overlayTextEl = document.getElementById('overlayText');
+  const starsRowEl = document.getElementById('starsRow');
+  const shopOverlayEl = document.getElementById('shopOverlay');
+  const coinValEl = document.getElementById('coinVal');
+  const shopCoinValEl = document.getElementById('shopCoinVal');
+
+  let coins = 0;
+  try{
+    const saved = localStorage.getItem('candyMatchCoins');
+    if(saved !== null) coins = parseInt(saved, 10) || 0;
+    if(!localStorage.getItem('candyMatchTestBoost500')){
+      coins += 500;
+      localStorage.setItem('candyMatchTestBoost500', '1');
+      localStorage.setItem('candyMatchCoins', String(coins));
+    }
+  } catch(e){
+    coins += 500;
+  }
+
+  function saveCoins(){
+    try{ localStorage.setItem('candyMatchCoins', String(coins)); } catch(e){}
+  }
+  function updateCoinDisplay(){
+    coinValEl.textContent = coins;
+    shopCoinValEl.textContent = coins;
+    const homeCoin = document.getElementById('homeCoinVal');
+    if(homeCoin) homeCoin.textContent = coins;
+  }
+
+  // Coups et temps disponibles selon le niveau : ca diminue progressivement
+  function levelMoves(lvl){
+    return Math.max(movesFloor(lvl), 18 - Math.floor((lvl-1)/3));
+  }
+  function levelTime(lvl){
+    return Math.max(timeFloor(lvl), 110 - Math.floor((lvl-1)/3)*10);
+  }
+  // Palier permanent : tous les 10 niveaux franchis, le plancher de coups/temps augmente un peu,
+  // pour que le jeu reste jouable meme tres loin dans la progression infinie.
+  function milestoneTier(lvl){
+    return Math.floor((lvl-1)/10);
+  }
+  function movesFloor(lvl){
+    return 12 + milestoneTier(lvl);
+  }
+  function timeFloor(lvl){
+    return 60 + milestoneTier(lvl)*5;
+  }
+  // Objectif de score : croissance normale jusqu'au niveau 10, puis ralentie ensuite
+  function levelGoal(lvl){
+    if(lvl<=10) return 300 + (lvl-1)*150;
+    return 1650 + (lvl-10)*75;
+  }
+  // Points par bonbon : augmentent progressivement pour compenser un objectif plus eleve
+  function pointsPerCandy(lvl){
+    return 20 + Math.floor((lvl-1)/5)*5;
+  }
+  function comboBonusPerCandy(lvl){
+    return 25 + Math.floor((lvl-1)/5)*5;
+  }
+  function fmtTime(s){
+    const m = Math.floor(s/60);
+    const sec = s%60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  function startTimer(seconds){
+    stopTimer();
+    timeLeft = seconds;
+    timeEl.textContent = fmtTime(timeLeft);
+    timerInterval = setInterval(()=>{
+      timeLeft--;
+      timeEl.textContent = fmtTime(Math.max(0,timeLeft));
+      if(timeLeft<=0){
+        stopTimer();
+        if(!overlayEl.classList.contains('show')){
+          sfxFail();
+          failCount++;
+          const extra = failCount<=1 ? 0 : Math.min(30, (failCount-1)*10);
+          const msg = extra>0
+            ? `Score final : ${score}. Réessaie encore ! (+${extra}s offertes)`
+            : `Score final : ${score}. Réessaie encore !`;
+          showOverlay('Temps écoulé !', msg, 0, resetLevel);
+        }
+      }
+    }, 1000);
+  }
+  function stopTimer(){
+    if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function randColor(){ return Math.floor(Math.random()*colorCountForLevel(level)); }
+
+  function createGrid(){
+    grid = [];
+    for(let r=0;r<SIZE;r++){
+      const row = [];
+      for(let c=0;c<SIZE;c++){
+        let color;
+        do{
+          color = randColor();
+        } while(
+          (c>=2 && row[c-1]===color && row[c-2]===color) ||
+          (r>=2 && grid[r-1][c]===color && grid[r-2][c]===color)
+        );
+        row.push(color);
+      }
+      grid.push(row);
+    }
+    silentResolve();
+  }
+
+  function silentResolve(){
+    let runs = findRuns();
+    let guard = 0;
+    while(runs.length>0 && guard<80){
+      const cells = new Set();
+      runs.forEach(run=>run.forEach(([r,c])=>cells.add(r+'_'+c)));
+      cells.forEach(key=>{
+        const [r,c] = key.split('_').map(Number);
+        grid[r][c] = -1;
+      });
+      collapseGrid();
+      runs = findRuns();
+      guard++;
+    }
+  }
+
+  function render(drops){
+    drops = drops || {};
+    boardEl.innerHTML = '';
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+
+        const candy = document.createElement('div');
+        candy.className = 'candy c'+grid[r][c] + (grid[r][c]>=10 ? ' special' : '');
+        candy.dataset.r = r;
+        candy.dataset.c = c;
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'candy-icon';
+        iconSpan.textContent = candyIconFor(grid[r][c]);
+        candy.appendChild(iconSpan);
+
+        const badge = candyBadgeFor(grid[r][c]);
+        const val = grid[r][c];
+        if(val>=10 && val<30){
+          const bg = document.createElement('div');
+          bg.className = 'special-bg ' + (val<20 ? 'h' : 'v');
+          candy.appendChild(bg);
+        } else if(val===99){
+          const bg = document.createElement('div');
+          bg.className = 'special-bg bomb';
+          candy.appendChild(bg);
+        }
+        if(badge){
+          const badgeSpan = document.createElement('span');
+          badgeSpan.className = 'candy-badge';
+          badgeSpan.textContent = badge;
+          candy.appendChild(badgeSpan);
+        }
+
+        const dropKey = r+'_'+c;
+        if(drops[dropKey]){
+          candy.style.transform = `translateY(${-drops[dropKey]*100}%)`;
+        }
+
+        cell.appendChild(candy);
+        boardEl.appendChild(cell);
+      }
+    }
+    if(Object.keys(drops).length){
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          Object.keys(drops).forEach(key=>{
+            const [r,c] = key.split('_').map(Number);
+            const el = boardEl.querySelector(`.candy[data-r='${r}'][data-c='${c}']`);
+            if(el){
+              el.style.transition = 'transform 340ms ease-in';
+              el.style.transform = 'translateY(0)';
+            }
+          });
+        });
+      });
+    }
+    attachGestures();
+    updateHUD();
+  }
+
+  function updateHUD(){
+    scoreEl.textContent = score;
+    movesEl.textContent = moves;
+    levelEl.textContent = level;
+    const pct = Math.min(100, Math.round(score/goal*100));
+    goalFillEl.style.width = pct+'%';
+    goalTextEl.textContent = `Objectif : ${score} / ${goal}`;
+  }
+
+  // Gestion tactile : swipe pour deplacer un bonbon directement dans une direction,
+  // ou simple tap-tap comme solution de repli.
+  let gesture = null; // {r,c,x,y,moved}
+
+  function attachGestures(){
+    boardEl.querySelectorAll('.cell').forEach(cell=>{
+      cell.addEventListener('pointerdown', onPointerDown);
+    });
+  }
+
+  function onPointerDown(e){
+    if(busy) return;
+    const r = parseInt(e.currentTarget.dataset.r);
+    const c = parseInt(e.currentTarget.dataset.c);
+    gesture = { r, c, x:e.clientX, y:e.clientY, moved:false };
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  }
+
+  function onPointerMove(e){
+    if(!gesture || gesture.moved) return;
+    const dx = e.clientX - gesture.x;
+    const dy = e.clientY - gesture.y;
+    if(Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+
+    let target;
+    if(Math.abs(dx) > Math.abs(dy)){
+      target = { r:gesture.r, c: gesture.c + (dx>0 ? 1 : -1) };
+    } else {
+      target = { r: gesture.r + (dy>0 ? 1 : -1), c: gesture.c };
+    }
+    gesture.moved = true;
+    if(target.r>=0 && target.r<SIZE && target.c>=0 && target.c<SIZE){
+      selected = null;
+      highlightSelected();
+      attemptSwap({r:gesture.r,c:gesture.c}, target);
+    }
+    endGesture();
+  }
+
+  function onPointerUp(e){
+    if(gesture && !gesture.moved){
+      handleTap(gesture.r, gesture.c);
+    }
+    endGesture();
+  }
+
+  function endGesture(){
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    gesture = null;
+  }
+
+  function handleTap(r,c){
+    if(busy) return;
+    if(!selected){
+      selected = {r,c};
+      highlightSelected();
+      return;
+    }
+    const dr = Math.abs(selected.r - r);
+    const dc = Math.abs(selected.c - c);
+    const isAdjacent = (dr+dc===1);
+    if(selected.r===r && selected.c===c){
+      selected = null;
+      highlightSelected();
+      return;
+    }
+    if(isAdjacent){
+      const from = selected;
+      selected = null;
+      highlightSelected();
+      attemptSwap(from, {r,c});
+    } else {
+      selected = {r,c};
+      highlightSelected();
+    }
+  }
+
+  function highlightSelected(){
+    document.querySelectorAll('.candy').forEach(el=>el.classList.remove('selected'));
+    if(selected){
+      const el = boardEl.querySelector(`.candy[data-r='${selected.r}'][data-c='${selected.c}']`);
+      if(el) el.classList.add('selected');
+    }
+  }
+
+  function swapGrid(a,b){
+    const tmp = grid[a.r][a.c];
+    grid[a.r][a.c] = grid[b.r][b.c];
+    grid[b.r][b.c] = tmp;
+  }
+
+  function candyEl(r,c){
+    return boardEl.querySelector(`.candy[data-r='${r}'][data-c='${c}']`);
+  }
+
+  function isSpecial(val){ return val>=10; }
+
+  let comboHoldUntil = 0;
+  function setComboMessage(msg, holdMs, bonus){
+    comboTextEl.textContent = msg;
+    comboTextEl.classList.toggle('bonus', !!bonus);
+    comboHoldUntil = Date.now() + (holdMs || 0);
+  }
+  function clearComboIfExpired(){
+    const remaining = comboHoldUntil - Date.now();
+    if(remaining > 0){
+      setTimeout(()=>{
+        comboTextEl.textContent = '';
+        comboTextEl.classList.remove('bonus');
+      }, remaining);
+    } else {
+      comboTextEl.textContent = '';
+      comboTextEl.classList.remove('bonus');
+    }
+  }
+
+  function spawnComets(orientation, r, c){
+    const isRow = orientation==='row';
+    const crossPct = isRow ? ((r+0.5)/SIZE*100) : ((c+0.5)/SIZE*100);
+    const startPct = isRow ? ((c+0.5)/SIZE*100) : ((r+0.5)/SIZE*100);
+    [-1,1].forEach(dir=>{
+      const comet = document.createElement('div');
+      comet.className = 'comet ' + (isRow ? 'row' : 'col');
+      if(isRow){
+        comet.style.top = crossPct + '%';
+        comet.style.left = startPct + '%';
+      } else {
+        comet.style.left = crossPct + '%';
+        comet.style.top = startPct + '%';
+      }
+      boardEl.appendChild(comet);
+      requestAnimationFrame(()=>{
+        comet.style.transition = 'left 380ms ease-out, top 380ms ease-out, opacity 380ms ease-out';
+        if(isRow){
+          comet.style.left = (dir<0 ? -4 : 104) + '%';
+        } else {
+          comet.style.top = (dir<0 ? -4 : 104) + '%';
+        }
+        comet.style.opacity = '0';
+      });
+      setTimeout(()=>comet.remove(), 420);
+    });
+  }
+
+  function spawnShockwave(r,c){
+    const sw = document.createElement('div');
+    sw.className = 'shockwave';
+    const size = (100/SIZE) * 1.3;
+    sw.style.width = size + '%';
+    sw.style.height = size + '%';
+    sw.style.left = ((c+0.5)/SIZE*100) + '%';
+    sw.style.top = ((r+0.5)/SIZE*100) + '%';
+    boardEl.appendChild(sw);
+    setTimeout(()=>sw.remove(), 600);
+  }
+
+  function candyIconFor(val){
+    if(val<10) return TYPES[val].icon;
+    if(val<20) return TYPES[val-10].icon;
+    if(val<30) return TYPES[val-20].icon;
+    return '🌈';
+  }
+  function candyBadgeFor(val){
+    if(val>=10 && val<20) return '↔';
+    if(val>=20 && val<30) return '↕';
+    return null;
+  }
+
+  function isStripeSpecial(val){ return val>=10 && val<30; }
+
+  function attemptSwap(a,b){
+    busy = true;
+    const valA = grid[a.r][a.c];
+    const valB = grid[b.r][b.c];
+
+    if(isStripeSpecial(valA) && isStripeSpecial(valB)){
+      activateComboSwap(a,b);
+      return;
+    }
+
+    if(isSpecial(valA) || isSpecial(valB)){
+      activateSpecialSwap(a,b);
+      return;
+    }
+
+    swapGrid(a,b);
+    const runs = findRuns();
+    swapGrid(a,b);
+
+    const elA = candyEl(a.r,a.c);
+    const elB = candyEl(b.r,b.c);
+
+    if(runs.length===0){
+      if(elA) elA.classList.add('swap-hint');
+      if(elB) elB.classList.add('swap-hint');
+      setTimeout(()=>{ busy=false; }, 300);
+      return;
+    }
+
+    const dx = b.c - a.c;
+    const dy = b.r - a.r;
+    if(elA && elB){
+      elA.style.transition = 'transform 320ms ease-in-out';
+      elB.style.transition = 'transform 320ms ease-in-out';
+      elA.style.transform = `translate(${dx*100}%, ${dy*100}%)`;
+      elB.style.transform = `translate(${-dx*100}%, ${-dy*100}%)`;
+    }
+
+    setTimeout(()=>{
+      swapGrid(a,b);
+      moves--;
+      resolveSwapMatches(a,b);
+    }, 320);
+  }
+
+  // Premiere resolution suite a un swap du joueur : cree des bonbons speciaux
+  // si un alignement de 4 (raye) ou 5+ (arc-en-ciel) est forme.
+  // Detecte les croix : une ligne de 3 et une colonne de 3 qui se croisent forment
+  // 5 bonbons uniques au total -> doit creer un arc-en-ciel, comme un alignement de 5.
+  function detectCrossSpecials(runs, specialCells){
+    for(let i=0;i<runs.length;i++){
+      const runA = runs[i];
+      if(runA.length>=4) continue;
+      const aHorizontal = runA.every(([r])=>r===runA[0][0]);
+      for(let j=i+1;j<runs.length;j++){
+        const runB = runs[j];
+        if(runB.length>=4) continue;
+        const bHorizontal = runB.every(([r])=>r===runB[0][0]);
+        if(aHorizontal === bHorizontal) continue;
+        const horizRun = aHorizontal ? runA : runB;
+        const vertRun = aHorizontal ? runB : runA;
+        const shared = horizRun.find(([r,c])=> vertRun.some(([r2,c2])=> r2===r && c2===c));
+        if(!shared) continue;
+        const uniqueCount = new Set([...horizRun, ...vertRun].map(([r,c])=>r+'_'+c)).size;
+        if(uniqueCount>=5){
+          specialCells.push({r:shared[0], c:shared[1], val:99});
+        }
+      }
+    }
+  }
+
+  function resolveSwapMatches(a,b){
+    const runs = findRuns();
+    const matched = new Set();
+    let longest = 0;
+    const specialCells = [];
+    runs.forEach(run=>{
+      run.forEach(([r,c])=>matched.add(r+'_'+c));
+      if(run.length>longest) longest = run.length;
+      if(run.length>=4){
+        let anchor = run.find(([r,c])=>r===b.r&&c===b.c);
+        if(!anchor) anchor = run.find(([r,c])=>r===a.r&&c===a.c);
+        if(!anchor) anchor = run[0];
+        const ar=anchor[0], ac=anchor[1];
+        const baseType = grid[ar][ac];
+        let specialVal;
+        if(run.length>=5){
+          specialVal = 99;
+        } else {
+          const horizontal = run.every(([r])=>r===run[0][0]);
+          specialVal = horizontal ? 10+baseType : 20+baseType;
+        }
+        specialCells.push({r:ar, c:ac, val:specialVal});
+      }
+    });
+    detectCrossSpecials(runs, specialCells);
+
+    const gained = matched.size * pointsPerCandy(level);
+    let comboMsg = '';
+    if(longest>=5) comboMsg = `COMBO x${longest} !`;
+    if(specialCells.length){
+      const bonusMoves = specialCells.reduce((sum,s)=> sum + (s.val===99 ? 2 : 1), 0);
+      const bonusTime = specialCells.reduce((sum,s)=> sum + (s.val===99 ? 10 : 5), 0);
+      moves += bonusMoves;
+      timeLeft += bonusTime;
+      timeEl.textContent = fmtTime(timeLeft);
+      const bonusTxt = `+${bonusMoves} coup${bonusMoves>1?'s':''} / +${bonusTime}s !`;
+      comboMsg = comboMsg ? comboMsg+` ✨ ${bonusTxt}` : `BONBON SPÉCIAL CRÉÉ ! ${bonusTxt}`;
+    }
+    if(specialCells.length){
+      setComboMessage(comboMsg, 3000, true);
+    } else if(comboMsg){
+      setComboMessage(comboMsg, 1200, false);
+    } else {
+      comboTextEl.textContent = '';
+    }
+    score += gained + (longest>=5 ? (longest-4)*comboBonusPerCandy(level) : 0);
+    updateHUD();
+    if(specialCells.length){
+      sfxSpecial();
+    } else {
+      sfxPopTypes(runs.map(run=>grid[run[0][0]][run[0][1]]));
+    }
+
+    const specialKeySet = new Set(specialCells.map(s=>s.r+'_'+s.c));
+    matched.forEach(key=>{
+      if(specialKeySet.has(key)) return;
+      const [r,c] = key.split('_').map(Number);
+      const el = candyEl(r,c);
+      if(el) el.classList.add('pop');
+    });
+
+    setTimeout(()=>{
+      matched.forEach(key=>{
+        if(specialKeySet.has(key)) return;
+        const [r,c] = key.split('_').map(Number);
+        grid[r][c] = -1;
+      });
+      specialCells.forEach(s=>{ grid[s.r][s.c] = s.val; });
+      const drops = collapseGridAnimated();
+      render(drops);
+      setTimeout(()=>resolveMatches(), 380);
+    }, 200);
+  }
+
+  // Active l'effet d'un bonbon special quand il est deplace par le joueur :
+  // rayure = efface toute la ligne ou la colonne, arc-en-ciel = efface un type entier.
+  function activateSpecialSwap(a,b){
+    const elA = candyEl(a.r,a.c);
+    const elB = candyEl(b.r,b.c);
+    const dx = b.c - a.c;
+    const dy = b.r - a.r;
+    if(elA && elB){
+      elA.style.transition = 'transform 320ms ease-in-out';
+      elB.style.transition = 'transform 320ms ease-in-out';
+      elA.style.transform = `translate(${dx*100}%, ${dy*100}%)`;
+      elB.style.transform = `translate(${-dx*100}%, ${-dy*100}%)`;
+    }
+
+    setTimeout(()=>{
+      swapGrid(a,b);
+      moves--;
+      sfxSpecial();
+
+      const matched = new Set();
+      const cellDelay = {};
+      [a,b].forEach(pos=>{
+        const val = grid[pos.r][pos.c];
+        if(val>=10 && val<30){
+          const vertical = val>=20;
+          spawnComets(vertical?'col':'row', pos.r, pos.c);
+          if(vertical){
+            for(let r=0;r<SIZE;r++){
+              const key = r+'_'+pos.c;
+              matched.add(key);
+              const d = Math.abs(r-pos.r)*25;
+              cellDelay[key] = Math.min(cellDelay[key] ?? 999, d);
+            }
+          } else {
+            for(let c=0;c<SIZE;c++){
+              const key = pos.r+'_'+c;
+              matched.add(key);
+              const d = Math.abs(c-pos.c)*25;
+              cellDelay[key] = Math.min(cellDelay[key] ?? 999, d);
+            }
+          }
+          matched.add(pos.r+'_'+pos.c);
+          cellDelay[pos.r+'_'+pos.c] = 0;
+        } else if(val===99){
+          spawnShockwave(pos.r,pos.c);
+          const other = (pos===a) ? grid[b.r][b.c] : grid[a.r][a.c];
+          const targetType = other<10 ? other : (other%10);
+          for(let r=0;r<SIZE;r++){
+            for(let c=0;c<SIZE;c++){
+              if(grid[r][c]===targetType){
+                const key = r+'_'+c;
+                matched.add(key);
+                const d = Math.max(Math.abs(r-pos.r), Math.abs(c-pos.c))*20;
+                cellDelay[key] = Math.min(cellDelay[key] ?? 999, d);
+              }
+            }
+          }
+          matched.add(pos.r+'_'+pos.c);
+          cellDelay[pos.r+'_'+pos.c] = 0;
+        }
+      });
+
+      comboTextEl.textContent = 'BONBON SPÉCIAL !';
+      score += matched.size * 12;
+      updateHUD();
+
+      let maxDelay = 0;
+      matched.forEach(key=>{
+        const delay = cellDelay[key] || 0;
+        if(delay>maxDelay) maxDelay = delay;
+        const [r,c] = key.split('_').map(Number);
+        const el = candyEl(r,c);
+        if(el){
+          el.style.animationDelay = delay+'ms';
+          el.classList.add('pop');
+        }
+      });
+
+      setTimeout(()=>{
+        matched.forEach(key=>{
+          const [r,c] = key.split('_').map(Number);
+          grid[r][c] = -1;
+        });
+        const drops = collapseGridAnimated();
+        render(drops);
+        setTimeout(()=>resolveMatches(), 380);
+      }, 220 + maxDelay);
+    }, 320);
+  }
+
+  // Combo special : deux bonbons rayes echanges ensemble effacent une ligne
+  // ET une colonne en croix, avec une animation dediee.
+  function activateComboSwap(a,b){
+    const elA = candyEl(a.r,a.c);
+    const elB = candyEl(b.r,b.c);
+    const dx = b.c - a.c;
+    const dy = b.r - a.r;
+    if(elA && elB){
+      elA.style.transition = 'transform 320ms ease-in-out';
+      elB.style.transition = 'transform 320ms ease-in-out';
+      elA.style.transform = `translate(${dx*100}%, ${dy*100}%)`;
+      elB.style.transform = `translate(${-dx*100}%, ${-dy*100}%)`;
+    }
+
+    setTimeout(()=>{
+      swapGrid(a,b);
+      moves--;
+
+      const center = b;
+      spawnComets('row', center.r, center.c);
+      spawnComets('col', center.r, center.c);
+      spawnShockwave(center.r, center.c);
+      sfxCombo();
+
+      const matched = new Set();
+      for(let c=0;c<SIZE;c++) matched.add(center.r+'_'+c);
+      for(let r=0;r<SIZE;r++) matched.add(r+'_'+center.c);
+
+      const bonusMoves = 3;
+      const bonusTime = 15;
+      moves += bonusMoves;
+      timeLeft += bonusTime;
+      timeEl.textContent = fmtTime(timeLeft);
+      setComboMessage(`COMBO BONBONS SPÉCIAUX ! +${bonusMoves} coups / +${bonusTime}s !`, 3000, true);
+
+      score += matched.size * pointsPerCandy(level);
+      updateHUD();
+
+      let maxDelay = 0;
+      matched.forEach(key=>{
+        const [r,c] = key.split('_').map(Number);
+        const dist = Math.max(Math.abs(r-center.r), Math.abs(c-center.c)) * 20;
+        if(dist>maxDelay) maxDelay = dist;
+        const el = candyEl(r,c);
+        if(el){
+          el.style.animationDelay = dist+'ms';
+          el.classList.add('pop');
+        }
+      });
+
+      setTimeout(()=>{
+        matched.forEach(key=>{
+          const [r,c] = key.split('_').map(Number);
+          grid[r][c] = -1;
+        });
+        const drops = collapseGridAnimated();
+        render(drops);
+        setTimeout(()=>resolveMatches(), 380);
+      }, 220 + maxDelay);
+    }, 320);
+  }
+
+  function findRuns(){
+    const runs = [];
+
+    for(let r=0;r<SIZE;r++){
+      let run=[[r,0]];
+      for(let c=1;c<=SIZE;c++){
+        if(c<SIZE && grid[r][c]===grid[r][c-1]){
+          run.push([r,c]);
+        } else {
+          if(run.length>=3) runs.push(run);
+          run=[[r,c]];
+        }
+      }
+    }
+    for(let c=0;c<SIZE;c++){
+      let run=[[0,c]];
+      for(let r=1;r<=SIZE;r++){
+        if(r<SIZE && grid[r][c]===grid[r-1][c]){
+          run.push([r,c]);
+        } else {
+          if(run.length>=3) runs.push(run);
+          run=[[r,c]];
+        }
+      }
+    }
+
+    return runs;
+  }
+
+  function scanDiagonal(cells, runs){
+    if(cells.length<3) return;
+    let run=[cells[0]];
+    for(let i=1;i<=cells.length;i++){
+      const cur = cells[i];
+      const prev = cells[i-1];
+      const sameColor = cur && grid[cur[0]][cur[1]]===grid[prev[0]][prev[1]];
+      if(sameColor){
+        run.push(cur);
+      } else {
+        if(run.length>=3) runs.push(run);
+        if(cur) run=[cur];
+      }
+    }
+  }
+
+  function resolveMatches(){
+    const runs = findRuns();
+    if(runs.length===0){
+      busy=false;
+      clearComboIfExpired();
+      checkEndConditions();
+      return;
+    }
+    const matched = new Set();
+    let longest = 0;
+    const specialCells = [];
+    runs.forEach(run=>{
+      run.forEach(([r,c])=>matched.add(r+'_'+c));
+      if(run.length>longest) longest = run.length;
+      if(run.length>=4){
+        const anchor = run[Math.floor(run.length/2)];
+        const ar=anchor[0], ac=anchor[1];
+        const baseType = grid[ar][ac];
+        let specialVal;
+        if(run.length>=5){
+          specialVal = 99;
+        } else {
+          const horizontal = run.every(([r])=>r===run[0][0]);
+          specialVal = horizontal ? 10+baseType : 20+baseType;
+        }
+        specialCells.push({r:ar, c:ac, val:specialVal});
+      }
+    });
+    detectCrossSpecials(runs, specialCells);
+
+    let gained = matched.size * pointsPerCandy(level);
+    let comboMsg = '';
+    if(longest>=5){
+      gained += (longest-4) * comboBonusPerCandy(level);
+      comboMsg = `COMBO x${longest} !`;
+    }
+    if(specialCells.length){
+      const bonusMoves = specialCells.reduce((sum,s)=> sum + (s.val===99 ? 2 : 1), 0);
+      const bonusTime = specialCells.reduce((sum,s)=> sum + (s.val===99 ? 10 : 5), 0);
+      moves += bonusMoves;
+      timeLeft += bonusTime;
+      timeEl.textContent = fmtTime(timeLeft);
+      const bonusTxt = `+${bonusMoves} coup${bonusMoves>1?'s':''} / +${bonusTime}s !`;
+      comboMsg = comboMsg ? comboMsg+` ✨ ${bonusTxt}` : `BONBON SPÉCIAL CRÉÉ ! ${bonusTxt}`;
+    }
+    if(specialCells.length){
+      setComboMessage(comboMsg, 3000, true);
+    } else if(comboMsg){
+      setComboMessage(comboMsg, 1200, false);
+    } else {
+      comboTextEl.textContent = '';
+    }
+
+    const specialKeySet = new Set(specialCells.map(s=>s.r+'_'+s.c));
+    matched.forEach(key=>{
+      if(specialKeySet.has(key)) return;
+      const [r,c] = key.split('_').map(Number);
+      const el = boardEl.querySelector(`.candy[data-r='${r}'][data-c='${c}']`);
+      if(el) el.classList.add('pop');
+    });
+    score += gained;
+    updateHUD();
+    if(specialCells.length){
+      sfxSpecial();
+    } else {
+      sfxPopTypes(runs.map(run=>grid[run[0][0]][run[0][1]]));
+    }
+
+    setTimeout(()=>{
+      matched.forEach(key=>{
+        if(specialKeySet.has(key)) return;
+        const [r,c] = key.split('_').map(Number);
+        grid[r][c] = -1;
+      });
+      specialCells.forEach(s=>{ grid[s.r][s.c] = s.val; });
+      const drops = collapseGridAnimated();
+      render(drops);
+      setTimeout(()=>resolveMatches(), 380);
+    }, 200);
+  }
+
+  // Version silencieuse (sans suivi d'animation), utilisee pour le nettoyage initial de la grille
+  function collapseGrid(){
+    for(let c=0;c<SIZE;c++){
+      let pointer = SIZE-1;
+      for(let r=SIZE-1;r>=0;r--){
+        if(grid[r][c] !== -1){
+          grid[pointer][c] = grid[r][c];
+          pointer--;
+        }
+      }
+      for(let r=pointer;r>=0;r--){
+        grid[r][c] = randColor();
+      }
+    }
+  }
+
+  // Version qui calcule aussi de combien de cases chaque bonbon tombe, pour l'animation
+  function collapseGridAnimated(){
+    const drops = {};
+    for(let c=0;c<SIZE;c++){
+      const survivors = [];
+      for(let r=0;r<SIZE;r++){
+        if(grid[r][c] !== -1) survivors.push({oldRow:r, val:grid[r][c]});
+      }
+      let pointer = SIZE-1;
+      for(let i=survivors.length-1;i>=0;i--){
+        const {oldRow,val} = survivors[i];
+        grid[pointer][c] = val;
+        const dist = pointer - oldRow;
+        if(dist>0) drops[pointer+'_'+c] = dist;
+        pointer--;
+      }
+      for(let r=pointer;r>=0;r--){
+        grid[r][c] = randColor();
+        drops[r+'_'+c] = pointer + 1 - r;
+      }
+    }
+    return drops;
+  }
+
+  function calcStars(){
+    const remainingRatio = moves / startMoves;
+    const overshoot = score / goal;
+    if(remainingRatio >= 0.5 || overshoot >= 1.5) return 3;
+    if(remainingRatio >= 0.2 || overshoot >= 1.15) return 2;
+    return 1;
+  }
+
+  function checkEndConditions(){
+    if(score >= goal){
+      stopTimer();
+      sfxWin();
+      const stars = calcStars();
+      coins += 10 + stars*5;
+      saveCoins();
+      updateCoinDisplay();
+      sfxCoin();
+      const isBonus = level % 5 === 0;
+      const isMilestone = level % 10 === 0;
+      let text = `Score final : ${score}.`;
+      let title = 'Niveau réussi !';
+      if(isMilestone){
+        title = 'Palier atteint !';
+        const greeting = playerName ? `Bravo ${playerName} !` : 'Bravo !';
+        text = `${greeting} Score final : ${score}. 🏆 Palier franchi : +1 coup et +5s de base pour la suite de la partie !`;
+      } else if(isBonus){
+        title = 'Niveau bonus atteint !';
+        text = `Score final : ${score}. 🎁 Bonus débloqué : +5 coups et +15s au prochain niveau !`;
+      }
+      const upcomingLevel = level + 1;
+      const continueAction = ()=>{
+        if(upcomingLevel % 5 === 0){
+          showInterstitialAd(()=>nextLevel(isBonus));
+        } else {
+          nextLevel(isBonus);
+        }
+      };
+      showOverlay(title, text, stars, continueAction, (isBonus||isMilestone) ? 55 : 28);
+      return;
+    }
+    if(moves <= 0){
+      stopTimer();
+      sfxFail();
+      failCount++;
+      const extra = failCount<=1 ? 0 : Math.min(30, (failCount-1)*10);
+      const msg = extra>0
+        ? `Score final : ${score}. Réessaie encore ! (+${extra}s offertes)`
+        : `Score final : ${score}. Réessaie encore !`;
+      showOverlay('Partie terminée', msg, 0, resetLevel);
+      return;
+    }
+  }
+
+  function showOverlay(title, text, stars, onContinue, confettiCount){
+    overlayTitleEl.textContent = title;
+    overlayTextEl.textContent = text;
+    starsRowEl.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const s = document.createElement('span');
+      s.className = 'starIcon' + (i<stars ? ' won' : '');
+      s.textContent = '★';
+      starsRowEl.appendChild(s);
+    }
+    overlayEl.classList.add('show');
+    if(stars>0) launchConfetti(confettiCount);
+    const btn = document.getElementById('overlayBtn');
+    btn.onclick = ()=>{
+      overlayEl.classList.remove('show');
+      onContinue();
+    };
+  }
+
+  // --- Emplacements publicitaires ---------------------------------------
+  // SIMULATION pour ce prototype : remplacer le contenu de ces deux fonctions
+  // par les vrais appels AdMob une fois l'appli empaquetee (ex. via le plugin
+  // @capacitor-community/admob) :
+  //   showInterstitialAd -> AdMob.prepareInterstitial() + AdMob.showInterstitial()
+  //   showRewardedAd      -> AdMob.prepareRewardVideoAd() + AdMob.showRewardVideoAd()
+  //                          et ecouter l'evenement de recompense avant d'appeler onComplete.
+  const adOverlayEl = document.getElementById('adOverlay');
+  const adCountdownEl = document.getElementById('adCountdown');
+  const adContinueBtn = document.getElementById('adContinueBtn');
+
+  function runSimulatedAd(onComplete){
+    let secondsLeft = 5;
+    adCountdownEl.textContent = secondsLeft;
+    adContinueBtn.disabled = true;
+    adOverlayEl.classList.add('show');
+    const tick = setInterval(()=>{
+      secondsLeft--;
+      if(secondsLeft<=0){
+        clearInterval(tick);
+        adCountdownEl.textContent = '✅';
+        adContinueBtn.disabled = false;
+      } else {
+        adCountdownEl.textContent = secondsLeft;
+      }
+    }, 1000);
+    adContinueBtn.onclick = ()=>{
+      if(adContinueBtn.disabled) return;
+      adOverlayEl.classList.remove('show');
+      onComplete();
+    };
+  }
+
+  // --- Audio : musique de fond generee + effets sonores ------------------
+  // Tout est genere avec la Web Audio API (pas de fichiers externes a heberger).
+  let soundOn = true;
+  try{ soundOn = localStorage.getItem('candyMatchSound') !== '0'; } catch(e){}
+
+  let audioCtx = null;
+  let musicTimer = null;
+  let musicStep = 0;
+
+  function getAudioCtx(){
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) audioCtx = new AC();
+    }
+    return audioCtx;
+  }
+
+  // Melodie plus longue en boucle (plusieurs phrases, gamme pentatonique,
+  // ambiance "confiserie"). Chaque entree est [frequence, duree] ; frequence 0 = silence.
+  const MUSIC_SEQUENCE = [
+    // Phrase A
+    [523.25,0.32],[659.25,0.32],[783.99,0.32],[659.25,0.32],
+    [587.33,0.32],[783.99,0.32],[659.25,0.32],[523.25,0.55],
+    // Phrase A (variation)
+    [523.25,0.32],[659.25,0.32],[880.00,0.32],[783.99,0.32],
+    [659.25,0.32],[587.33,0.32],[523.25,0.55],[0,0.25],
+    // Phrase B (plus grave, contraste)
+    [440.00,0.36],[392.00,0.36],[329.63,0.36],[293.66,0.36],
+    [261.63,0.36],[293.66,0.36],[329.63,0.36],[392.00,0.6],
+    [0,0.2],
+    // Phrase C (petit arpege joueur, plus aigu)
+    [659.25,0.25],[783.99,0.25],[880.00,0.25],[783.99,0.25],
+    [659.25,0.25],[587.33,0.25],[523.25,0.5],[0,0.3],
+    // Retour de la phrase A, conclue
+    [523.25,0.32],[659.25,0.32],[783.99,0.32],[880.00,0.32],
+    [783.99,0.32],[659.25,0.32],[587.33,0.32],[523.25,0.85],
+    [0,0.5]
+  ];
+
+  function playMusicStep(){
+    if(!soundOn) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const [freq, dur] = MUSIC_SEQUENCE[musicStep % MUSIC_SEQUENCE.length];
+    if(freq > 0){
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime+dur+0.02);
+    }
+    musicStep++;
+    musicTimer = setTimeout(playMusicStep, dur*1000);
+  }
+
+  function startMusic(){
+    if(musicTimer) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    if(ctx.state === 'suspended') ctx.resume();
+    musicStep = 0;
+    playMusicStep();
+  }
+
+  function stopMusic(){
+    if(musicTimer){ clearTimeout(musicTimer); musicTimer = null; }
+  }
+
+  // Petits effets sonores synthetises (bip, tintement, fanfare courte...)
+  function playTone(freq, duration, type, volume, delay){
+    if(!soundOn) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    const t0 = ctx.currentTime + (delay||0);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(volume||0.12, t0+0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0+duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+duration+0.02);
+  }
+
+  // Table de sons distincts pour chaque type de bonbon (ourson, croco, fraise...)
+  const CANDY_SFX = [
+    {f:440, w:'triangle'}, // 0 ourson
+    {f:330, w:'sawtooth'}, // 1 crocodile
+    {f:660, w:'sine'},     // 2 fraise
+    {f:392, w:'square'},   // 3 anneau
+    {f:494, w:'triangle'}, // 4 chenille
+    {f:784, w:'sine'},     // 5 sucette
+    {f:349, w:'square'},   // 6 raisin
+    {f:587, w:'sawtooth'}, // 7 abeille
+    {f:523, w:'triangle'}, // 8 cerise
+  ];
+  function sfxCandyPop(type, delay){
+    const t = CANDY_SFX[type] || CANDY_SFX[0];
+    playTone(t.f + (Math.random()*16-8), 0.16, t.w, 0.09, delay||0);
+  }
+  function sfxPopTypes(types){
+    const uniq = [...new Set(types)];
+    uniq.forEach((t,i)=>sfxCandyPop(t, i*0.05));
+  }
+  function sfxPop(){ playTone(700 + Math.random()*200, 0.15, 'triangle', 0.1); }
+  function sfxSpecial(){
+    playTone(660, 0.12, 'square', 0.08);
+    playTone(880, 0.16, 'square', 0.08, 0.08);
+  }
+  function sfxCombo(){
+    [520,660,880,1040].forEach((f,i)=>playTone(f, 0.18, 'sawtooth', 0.07, i*0.06));
+  }
+  function sfxCoin(){
+    playTone(988, 0.08, 'square', 0.09);
+    playTone(1319, 0.12, 'square', 0.09, 0.06);
+  }
+  function sfxWin(){
+    [523,659,784,1047].forEach((f,i)=>playTone(f, 0.22, 'triangle', 0.11, i*0.11));
+  }
+  function sfxFail(){
+    playTone(330, 0.3, 'sawtooth', 0.08);
+    playTone(220, 0.35, 'sawtooth', 0.08, 0.12);
+  }
+  function sfxIntro(){
+    [392.00,523.25,659.25,783.99,1046.50].forEach((f,i)=>
+      playTone(f, 0.28, 'triangle', 0.1, i*0.13)
+    );
+  }
+
+  function updateSoundButtons(){
+    const label = soundOn ? '🔊 Sons : Activés' : '🔇 Sons : Coupés';
+    const settingsBtn = document.getElementById('soundSettingsBtn');
+    const footerBtn = document.getElementById('soundToggleBtn');
+    if(settingsBtn) settingsBtn.textContent = label;
+    if(footerBtn) footerBtn.textContent = soundOn ? '🔊' : '🔇';
+  }
+
+  function toggleSound(){
+    soundOn = !soundOn;
+    try{ localStorage.setItem('candyMatchSound', soundOn ? '1' : '0'); } catch(e){}
+    updateSoundButtons();
+  }
+
+  document.getElementById('soundSettingsBtn').addEventListener('click', toggleSound);
+  document.getElementById('soundToggleBtn').addEventListener('click', toggleSound);
+  updateSoundButtons();
+
+  let isPremium = false;
+  try{
+    isPremium = localStorage.getItem('candyMatchPremium') === '1';
+    if(!localStorage.getItem('candyMatchPremiumTestReset')){
+      isPremium = false;
+      localStorage.removeItem('candyMatchPremium');
+      localStorage.setItem('candyMatchPremiumTestReset', '1');
+    }
+  } catch(e){
+    isPremium = false;
+  }
+
+  function updatePremiumUI(){
+    const row = document.getElementById('premiumStatusRow');
+    const btn = document.getElementById('premiumBtn');
+    if(isPremium){
+      row.style.display = 'flex';
+      btn.style.display = 'none';
+    } else {
+      row.style.display = 'none';
+      btn.style.display = 'block';
+    }
+  }
+  updatePremiumUI();
+
+  const purchaseOverlayEl = document.getElementById('purchaseOverlay');
+  document.getElementById('premiumBtn').addEventListener('click', ()=>{
+    purchaseOverlayEl.classList.add('show');
+  });
+  document.getElementById('purchaseCancelBtn').addEventListener('click', ()=>{
+    purchaseOverlayEl.classList.remove('show');
+  });
+  document.getElementById('purchaseConfirmBtn').addEventListener('click', ()=>{
+    // SIMULATION : a remplacer par le vrai flux Google Play Billing une fois l'appli publiee.
+    // La progression (niveau, pieces existantes) n'est jamais touchee par l'achat.
+    isPremium = true;
+    try{ localStorage.setItem('candyMatchPremium', '1'); } catch(e){}
+    coins += 500;
+    saveCoins();
+    updateCoinDisplay();
+    sfxCoin();
+    purchaseOverlayEl.classList.remove('show');
+    updatePremiumUI();
+  });
+
+  function showInterstitialAd(onComplete){
+    if(isPremium){ onComplete(); return; }
+    runSimulatedAd(onComplete);
+  }
+
+  function showRewardedAd(onComplete){
+    runSimulatedAd(onComplete);
+  }
+
+  document.getElementById('watchAdBtn').addEventListener('click', ()=>{
+    showRewardedAd(()=>{
+      coins += 50;
+      saveCoins();
+      updateCoinDisplay();
+      sfxCoin();
+    });
+  });
+
+  function launchConfetti(count){
+    count = count || 28;
+    const colors = ['#ff6b9d','#ffd166','#7be0ff','#b96bff','#ffffff'];
+    for(let i=0;i<count;i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = Math.random()*100 + '%';
+      piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+      piece.style.animationDuration = (1.6 + Math.random()*1.4) + 's';
+      piece.style.animationDelay = (Math.random()*0.4) + 's';
+      overlayEl.appendChild(piece);
+      setTimeout(()=>piece.remove(), 3500);
+    }
+  }
+
+  function nextLevel(bonus){
+    level++;
+    updateBestLevel();
+    saveCurrentLevel();
+    failCount = 0;
+    moves = levelMoves(level) + (bonus ? 5 : 0);
+    startMoves = moves;
+    goal = levelGoal(level);
+    score = 0;
+    createGrid();
+    render();
+    startTimer(levelTime(level) + (bonus ? 15 : 0));
+    busy = false;
+  }
+
+  function resetLevel(){
+    moves = levelMoves(level);
+    startMoves = moves;
+    score = 0;
+    createGrid();
+    render();
+    const extraTime = failCount<=1 ? 0 : Math.min(30, (failCount-1)*10);
+    startTimer(levelTime(level) + extraTime);
+    busy = false;
+  }
+
+  // Aide de test temporaire : place deux bonbons speciaux rayes cote a cote,
+  // prets a etre echanges pour tester le combo croix. A retirer une fois teste.
+  function seedComboTest(){
+    grid[0][0] = 10; // raye horizontal, type 0
+    grid[0][1] = 21; // raye vertical, type 1
+  }
+
+  function fullRestart(){
+    startGame(1);
+  }
+
+  function restartCurrentLevel(){
+    moves = levelMoves(level);
+    startMoves = moves;
+    score = 0;
+    createGrid();
+    render();
+    startTimer(levelTime(level));
+    busy = false;
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', restartCurrentLevel);
+
+  const shopBtn = document.getElementById('shopBtn');
+  const shopCloseBtn = document.getElementById('shopCloseBtn');
+  shopBtn.addEventListener('click', ()=>{
+    updateCoinDisplay();
+    shopOverlayEl.classList.add('show');
+  });
+  shopCloseBtn.addEventListener('click', ()=>{
+    shopOverlayEl.classList.remove('show');
+  });
+
+  function findRandomNormalCell(){
+    const options = [];
+    for(let r=0;r<SIZE;r++){
+      for(let c=0;c<SIZE;c++){
+        if(grid[r][c]<10) options.push({r,c});
+      }
+    }
+    if(!options.length) return null;
+    return options[Math.floor(Math.random()*options.length)];
+  }
+
+  const SHOP_ITEMS = {
+    time:   { cost:30,  label:'+15s' },
+    moves:  { cost:40,  label:'+3 coups' },
+    stripe: { cost:60,  label:'bonbon rayé' },
+    bomb:   { cost:120, label:'bonbon arc-en-ciel' }
+  };
+
+  document.querySelectorAll('.buyBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const item = btn.dataset.item;
+      const def = SHOP_ITEMS[item];
+      if(!def || coins < def.cost) return;
+
+      coins -= def.cost;
+
+      if(item==='time'){
+        timeLeft += 15;
+        timeEl.textContent = fmtTime(timeLeft);
+      } else if(item==='moves'){
+        moves += 3;
+        updateHUD();
+      } else if(item==='stripe' || item==='bomb'){
+        const cell = findRandomNormalCell();
+        if(cell){
+          const baseType = grid[cell.r][cell.c];
+          if(item==='stripe'){
+            const horizontal = Math.random() < 0.5;
+            grid[cell.r][cell.c] = horizontal ? 10+baseType : 20+baseType;
+          } else {
+            grid[cell.r][cell.c] = 99;
+          }
+          render();
+        } else {
+          coins += def.cost;
+        }
+      }
+
+      saveCoins();
+      updateCoinDisplay();
+      sfxCoin();
+    });
+  });
+
+  // Gestion des ecrans : splash -> accueil -> jeu / profil / parametres
+  const screens = {
+    splash: document.getElementById('splashScreen'),
+    home: document.getElementById('homeScreen'),
+    profile: document.getElementById('profileScreen'),
+    settings: document.getElementById('settingsScreen'),
+    app: document.getElementById('app')
+  };
+  function showScreen(name){
+    Object.values(screens).forEach(el=>el.classList.remove('active'));
+    screens[name].classList.add('active');
+    if(name==='home'){
+      const hint = document.getElementById('resumeHint');
+      hint.textContent = currentLevel>1 ? `Reprendre au niveau ${currentLevel}` : 'Nouvelle partie';
+    }
+  }
+
+  let playerName = '';
+  try{
+    playerName = localStorage.getItem('candyMatchPlayerName') || '';
+  } catch(e){}
+  const playerNameInput = document.getElementById('playerNameInput');
+  playerNameInput.value = playerName;
+  playerNameInput.addEventListener('input', ()=>{
+    playerName = playerNameInput.value.trim();
+    try{ localStorage.setItem('candyMatchPlayerName', playerName); } catch(e){}
+  });
+
+  let currentLevel = 1;
+  try{
+    const savedCurrent = localStorage.getItem('candyMatchCurrentLevel');
+    if(savedCurrent !== null) currentLevel = parseInt(savedCurrent, 10) || 1;
+  } catch(e){}
+  function saveCurrentLevel(){
+    currentLevel = level;
+    try{ localStorage.setItem('candyMatchCurrentLevel', String(level)); } catch(e){}
+  }
+
+  let bestLevel = 1;
+  try{
+    const savedBest = localStorage.getItem('candyMatchBestLevel');
+    if(savedBest !== null) bestLevel = parseInt(savedBest, 10) || 1;
+  } catch(e){}
+  function updateBestLevel(){
+    if(level > bestLevel){
+      bestLevel = level;
+      try{ localStorage.setItem('candyMatchBestLevel', String(bestLevel)); } catch(e){}
+    }
+  }
+
+  function startGame(startLevel){
+    level = startLevel;
+    failCount = 0;
+    goal = levelGoal(level);
+    moves = levelMoves(level);
+    startMoves = moves;
+    score = 0;
+    updateBestLevel();
+    saveCurrentLevel();
+    createGrid();
+    render();
+    startTimer(levelTime(level));
+    busy = false;
+    showScreen('app');
+  }
+
+  document.getElementById('playBtn').addEventListener('click', ()=>{
+    triggerIntroOnce();
+    startGame(currentLevel);
+  });
+  document.getElementById('profileBtn').addEventListener('click', ()=>{
+    document.getElementById('profileBestLevel').textContent = bestLevel;
+    document.getElementById('profileCoins').textContent = coins;
+    showScreen('profile');
+  });
+  document.getElementById('settingsBtn').addEventListener('click', ()=>{
+    showScreen('settings');
+  });
+  document.getElementById('profileBackBtn').addEventListener('click', ()=>{ showScreen('home'); });
+  document.getElementById('settingsBackBtn').addEventListener('click', ()=>{ showScreen('home'); });
+  document.getElementById('menuBackBtn').addEventListener('click', ()=>{
+    stopTimer();
+    shopOverlayEl.classList.remove('show');
+    overlayEl.classList.remove('show');
+    updateCoinDisplay();
+    showScreen('home');
+  });
+  const resetBtn = document.getElementById('resetProgressBtn');
+  let resetArmed = false;
+  let resetArmTimeout = null;
+  resetBtn.addEventListener('click', ()=>{
+    if(!resetArmed){
+      resetArmed = true;
+      resetBtn.textContent = 'Confirmer ? (appuie encore)';
+      resetArmTimeout = setTimeout(()=>{
+        resetArmed = false;
+        resetBtn.textContent = 'Réinitialiser la progression';
+      }, 3500);
+      return;
+    }
+    clearTimeout(resetArmTimeout);
+    resetArmed = false;
+    resetBtn.textContent = 'Réinitialiser la progression';
+    coins = 0;
+    bestLevel = 1;
+    currentLevel = 1;
+    try{
+      localStorage.removeItem('candyMatchCoins');
+      localStorage.removeItem('candyMatchBestLevel');
+      localStorage.removeItem('candyMatchCurrentLevel');
+    } catch(e){}
+    updateCoinDisplay();
+    showScreen('home');
+  });
+
+  updateCoinDisplay();
+
+  // Splash : passe a l'accueil automatiquement, ou au premier tap
+  const splashTimeout = setTimeout(()=>showScreen('home'), 1800);
+  let introPlayed = false;
+  function triggerIntroOnce(){
+    if(introPlayed) return;
+    introPlayed = true;
+    sfxIntro();
+  }
+
+  screens.splash.addEventListener('click', ()=>{
+    clearTimeout(splashTimeout);
+    triggerIntroOnce();
+    showScreen('home');
+  });
+})();
+</script>
+</body>
+</html>
