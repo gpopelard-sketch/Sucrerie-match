@@ -1,0 +1,13 @@
+{
+  "background_color": "rgb(75, 33, 112)",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Sucrerie-match",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Sucrerie",
+  "start_url": "/",
+  "theme_color": "rgb(75, 33, 112)",
+  "description": "Un jeu de match-3 avec des bonbons Haribo et des combos\nspéciaux",
+  "id": "Sucrerie-match"
+}
